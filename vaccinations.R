@@ -1,15 +1,17 @@
+# LOAD ----
+
 library(tidyverse)
 library(data.table)
 library(lubridate)
 library(readxl)
 
-
-
 # This dataset on vaccine rollouts and vaccine hesitancy comes from the CDC.
 #   https://data.cdc.gov/Vaccinations/Vaccine-Hesitancy-for-COVID-19-County-and-local-es/q9mh-h2tw
-vac_raw <- read.csv(url("https://data.cdc.gov/api/views/q9mh-h2tw/rows.csv"))
 
+    # Initially, I had the following function but the direct url dl was taking forever)
+    #   vac_raw <- read.csv(url("https://data.cdc.gov/resource/q9mh-h2tw.csv"))
 
+vac_raw <- read.csv("Vaccine_Hesitancy_for_COVID-19__County_and_local_estimates.csv")
 
 
 # The following datasets come from various US Gov agencies.
@@ -44,10 +46,53 @@ vac_raw <- read.csv(url("https://data.cdc.gov/api/views/q9mh-h2tw/rows.csv"))
                           skip = 2)
 
 
+# TIDY ----
+# edu_raw has 3,283 FIPS, une_raw has 3,275; pop_raw has 3,273, pov_raw has 3,193
+#   and vac_raw has 3,142
+    
+# I checked with some anti_joins and it seems that all FIPS for datasets
+#   are contained within edu_raw, so a left_join could work
+#   just note that for the vaccination dataset, FIPS is originally integer
+#   while rest 
+    
+glimpse(vac_raw)
+glimpse(edu_raw)
+glimpse(une_raw)
+glimpse(pop_raw)
+glimpse(pov_raw)
+
+length(unique(edu_raw$'FIPS Code'))
+length(unique(une_raw$fips_txt))
+length(unique(pop_raw$FIPStxt))
+length(unique(pov_raw$FIPStxt))
+length(unique(vac_raw$FIPS.Code))
+    
+
+test <- anti_join(edu_raw, pop_raw, by = c("FIPS Code" = "FIPStxt"))
+length(unique(test$'FIPS Code'))
+rm(test)
+
+test2 <- anti_join(pop_raw, edu_raw, by = c("FIPStxt" = "FIPS Code"))
+length(unique(test2$'FIPStxt'))
+rm(test2)
+
+
+#
+
+vaccin <- vac_raw %>% 
+    mutate(FIPS.Code = as.character(FIPS.Code)) %>% 
+    mutate(FIPS.Code = case_when(nchar(FIPS.Code) == 4 ~ paste0("0", FIPS.Code), 
+                                 nchar(FIPS.Code) == 5 ~ FIPS.Code))
+
+colnames(vac_raw)
+
+
+
+
 # Next, will filter variables of interest in each of
 #   these datasets, and then do a join.
 
-# Then, for the fun stuff!
+# Then, for the fun stuff!"fips_text" = 
 
     # We gotta think of a far better name than this too... ha
 
