@@ -50,47 +50,82 @@ vac_raw <- read.csv("Vaccine_Hesitancy_for_COVID-19__County_and_local_estimates.
 # edu_raw has 3,283 FIPS, une_raw has 3,275; pop_raw has 3,273, pov_raw has 3,193
 #   and vac_raw has 3,142
     
-# I checked with some anti_joins and it seems that all FIPS for datasets
-#   are contained within edu_raw, so a left_join could work
-#   just note that for the vaccination dataset, FIPS is originally integer
-#   while rest 
+# I checked with some anti_joins and it seems that all FIPS for all datasets
+#   are contained within edu_raw, so a left_join could work.
+#   The difference is that edu_raw disaggregaes also at additional state levels
+#   and for some reason includes Puerto Rico.
     
-glimpse(vac_raw)
-glimpse(edu_raw)
-glimpse(une_raw)
-glimpse(pop_raw)
-glimpse(pov_raw)
-
 length(unique(edu_raw$'FIPS Code'))
 length(unique(une_raw$fips_txt))
 length(unique(pop_raw$FIPStxt))
 length(unique(pov_raw$FIPStxt))
 length(unique(vac_raw$FIPS.Code))
-    
 
-test <- anti_join(edu_raw, pop_raw, by = c("FIPS Code" = "FIPStxt"))
+# Just note that for the vaccination dataset, FIPS is originally integer
+# while the rest of the datasets have it as char, hence:
+vaccinations <- vac_raw %>% 
+  mutate(FIPS.Code = as.character(FIPS.Code)) %>% 
+  mutate(FIPS.Code = case_when(nchar(FIPS.Code) == 4 ~ paste0("0", FIPS.Code), 
+                               nchar(FIPS.Code) == 5 ~ FIPS.Code))
+
+# Can delete later, but here if you wanna see diffs bw datasets
+test <- anti_join(edu_raw, vaccinations, by = c("FIPS Code" = "FIPS.Code"))
 length(unique(test$'FIPS Code'))
+unique(test$'Area name')
 rm(test)
 
-test2 <- anti_join(pop_raw, edu_raw, by = c("FIPStxt" = "FIPS Code"))
-length(unique(test2$'FIPStxt'))
+glimpse(test)
+
+test2 <- anti_join(vaccinations, edu_raw, by = c("FIPS.Code" = "FIPS Code"))
+length(unique(test2$'FIPS.Code'))
 rm(test2)
 
 
-#
+# Now I'm just tidying out the mass of columns we dont need.
+#   I've kept here the pop numbers in case we need them later,
+#   rather than percentages.
 
-vaccin <- vac_raw %>% 
-    mutate(FIPS.Code = as.character(FIPS.Code)) %>% 
-    mutate(FIPS.Code = case_when(nchar(FIPS.Code) == 4 ~ paste0("0", FIPS.Code), 
-                                 nchar(FIPS.Code) == 5 ~ FIPS.Code))
+  # I've only selected overall poverty population numbers and percentages
+  #   while emitting child poverty stats and confidence intervals
+  #     (especially since our vaccination data focuses on adults for now)
+  poverty <-pov_raw %>%
+    select(c("FIPStxt", 
+             #"POVALL_2019", 
+             "PCTPOVALL_2019"
+             ))
+  
+  # For education, it's pretty straightforward, just took most recent.
+  education <- edu_raw %>% select(
+    c('FIPS Code',
+    #'Less than a high school diploma, 2015-19',
+    #'High school diploma only, 2015-19',
+    #'Some college or associate\'s degree, 2015-19',
+    #'Bachelor\'s degree or higher, 2015-19',
+    'Percent of adults with less than a high school diploma, 2015-19',
+    'Percent of adults with a high school diploma only, 2015-19',
+    'Percent of adults completing some college or associate\'s degree, 2015-19',
+    'Percent of adults with a bachelor\'s degree or higher, 2015-19'
+    ))
+  
+  unemployment <- une_raw %>% select(
+    c('fips_txt',
+      #'Employed_2019',
+      #'Unemployed_2019,',
+      'Unemployment_rate_2019',
+      'Median_Household_Income_2019',
+      #'Med_HH_Income_Percent_of_State_Total_2019'
+    ))
+  
+  population <- pop_raw %>% select(
+    c('FIPStxt',
+      'POP_ESTIMATE_2019'
+    ))
 
-colnames(vac_raw)
 
+# Now, to join.
 
-
-
-# Next, will filter variables of interest in each of
-#   these datasets, and then do a join.
+vaccinations %>% inner_join()
+  
 
 # Then, for the fun stuff!"fips_text" = 
 
