@@ -50,10 +50,12 @@ vac_raw <- read.csv("Vaccine_Hesitancy_for_COVID-19__County_and_local_estimates.
 # edu_raw has 3,283 FIPS, une_raw has 3,275; pop_raw has 3,273, pov_raw has 3,193
 #   and vac_raw has 3,142
     
-# I checked with some anti_joins and it seems that all FIPS for all datasets
-#   are contained within edu_raw, so a left_join could work.
-#   The difference is that edu_raw disaggregaes also at additional state levels
-#   and for some reason includes Puerto Rico.
+# I checked with some anti_joins and it seems that all FIPS for vaccination datasets
+#   is contained within the other datasets, with the exception of one...
+#   Kalawao County, Hawaii.
+    
+#   In addition, the education and unemployment datasets include state-level
+#   disaggregation + Puerto Rico, but I don't think we'll need those.
     
 length(unique(edu_raw$'FIPS Code'))
 length(unique(une_raw$fips_txt))
@@ -68,17 +70,24 @@ vaccinations <- vac_raw %>%
   mutate(FIPS.Code = case_when(nchar(FIPS.Code) == 4 ~ paste0("0", FIPS.Code), 
                                nchar(FIPS.Code) == 5 ~ FIPS.Code))
 
-# Can delete later, but here if you wanna see diffs bw datasets
+# Can delete later, but here if you wanna see some diffs bw datasets
 test <- anti_join(edu_raw, vaccinations, by = c("FIPS Code" = "FIPS.Code"))
 length(unique(test$'FIPS Code'))
 unique(test$'Area name')
 rm(test)
 
-glimpse(test)
-
 test2 <- anti_join(vaccinations, edu_raw, by = c("FIPS.Code" = "FIPS Code"))
 length(unique(test2$'FIPS.Code'))
 rm(test2)
+
+test3 <- anti_join(une_raw, vaccinations, by = c("fips_txt" = "FIPS.Code"))
+length(unique(test3$'FIPS Code'))
+unique(test3$'Area name')
+rm(test3)
+
+test4 <- anti_join(vaccinations, une_raw, by = c("FIPS.Code" = "fips_txt"))
+length(unique(test4$'FIPS.Code'))
+rm(test4)
 
 
 # Now I'm just tidying out the mass of columns we dont need.
@@ -124,10 +133,23 @@ rm(test2)
 
 # Now, to join.
 
-vaccinations %>% inner_join()
-  
+joined_data <- vaccinations %>% 
+  inner_join(unemployment, by = c("FIPS.Code" = "fips_txt")) %>%
+  inner_join(population, by = c("FIPS.Code" = "FIPStxt")) %>%
+  inner_join(poverty, by = c("FIPS.Code" = "FIPStxt")) %>% 
+  inner_join(education, by = c("FIPS.Code" = "FIPS Code"))
 
-# Then, for the fun stuff!"fips_text" = 
+glimpse(joined_data)
+
+
+# Then, for the fun stuff! 
+
+
+
+
+
+
+
 
     # We gotta think of a far better name than this too... ha
 
