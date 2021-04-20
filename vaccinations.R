@@ -4,6 +4,7 @@ library(tidyverse)
 library(data.table)
 library(lubridate)
 library(readxl)
+library(broom)
 
 # This dataset on vaccine rollouts and vaccine hesitancy comes from the CDC.
 #   https://data.cdc.gov/Vaccinations/Vaccine-Hesitancy-for-COVID-19-County-and-local-es/q9mh-h2tw
@@ -68,7 +69,10 @@ length(unique(vac_raw$FIPS.Code))
 vaccinations <- vac_raw %>% 
   mutate(FIPS.Code = as.character(FIPS.Code)) %>% 
   mutate(FIPS.Code = case_when(nchar(FIPS.Code) == 4 ~ paste0("0", FIPS.Code), 
-                               nchar(FIPS.Code) == 5 ~ FIPS.Code))
+                               nchar(FIPS.Code) == 5 ~ FIPS.Code)) %>%
+  rename('percent_adults_fully_vaccinated' = 'Percent.adults.fully.vaccinated.against.COVID.19')
+
+
 
 # Can delete later, but here if you wanna see some diffs bw datasets
 test <- anti_join(edu_raw, vaccinations, by = c("FIPS Code" = "FIPS.Code"))
@@ -101,7 +105,8 @@ rm(test4)
     select(c("FIPStxt", 
              #"POVALL_2019", 
              "PCTPOVALL_2019"
-             ))
+             )) %>%
+    rename('poverty_percentage' = 'PCTPOVALL_2019')
   
   # For education, it's pretty straightforward, just took most recent.
   education <- edu_raw %>% select(
@@ -114,7 +119,11 @@ rm(test4)
     'Percent of adults with a high school diploma only, 2015-19',
     'Percent of adults completing some college or associate\'s degree, 2015-19',
     'Percent of adults with a bachelor\'s degree or higher, 2015-19'
-    ))
+    )) %>%
+    rename('edu_percent_less_hs' = 'Percent of adults with less than a high school diploma, 2015-19',
+           'edu_percent_hs_only' = 'Percent of adults with a high school diploma only, 2015-19',
+           'edu_percent_some_college' = 'Percent of adults completing some college or associate\'s degree, 2015-19',
+           'edu_percent_bachelors' = 'Percent of adults with a bachelor\'s degree or higher, 2015-19')
   
   unemployment <- une_raw %>% select(
     c('fips_txt',
@@ -131,8 +140,8 @@ rm(test4)
     ))
 
 
-# Now, to join.
-
+# Now, to join. As mentioned above, we lose one Kalawao County, Hawaii,
+#   though I haven't investigated why that's not in the other datasets.
 joined_data <- vaccinations %>% 
   inner_join(unemployment, by = c("FIPS.Code" = "fips_txt")) %>%
   inner_join(population, by = c("FIPS.Code" = "FIPStxt")) %>%
@@ -142,16 +151,76 @@ joined_data <- vaccinations %>%
 glimpse(joined_data)
 
 
-# Then, for the fun stuff! 
+
+# EDA ----
+# Dependent variable
+#   = percent_adults_fully_vaccinated
+
+# Potential independent variables 
+#   = Unemployment_rate_2019
+#   = poverty_percentage
+#   = Median_Household_Income_2019 
+#   = Education (there are four different levels, I'm not sure)
+#   = Estimated.strongly.hesitant
+#   = Estimated.hesitant
+#   anything else?
+
+
+# When trying a single variable linear regression first here, with poverty.
+#   we get an r-squared of 0.0254
+
+# There's one outlier, Chattahoochee County, Georgia with like >90% vaccination rate
+
+ggplot(joined_data, 
+       aes(poverty_percentage, percent_adults_fully_vaccinated)) +
+  geom_point()+
+  geom_smooth(method = "lm", se = FALSE)
+
+poverty_model <- lm(percent_adults_fully_vaccinated ~ poverty_percentage, 
+                    data = joined_data)
+
+glance(poverty_model)
+
+
+# Now having a look with hesitancy, this is higher than the others,
+#   but still not really that big a deal on its own
+#   we get an r-squared of 0.167.
+hesitancy_model <- lm(percent_adults_fully_vaccinated ~ Estimated.hesitant, 
+                    data = joined_data)
+
+glance(hesitancy_model)
+
+# Now having a look with unemployment
+#   we get an r-squared of 0.0122
+unemployment_model <- lm(percent_adults_fully_vaccinated ~ Unemployment_rate_2019, 
+                      data = joined_data)
+
+glance(unemployment_model)
 
 
 
+#
+#
+#
+#
+#
+# Interestingly, if you make hesitancy the dependent variable,
+#   there does seem to be a very small correlation with education level and hesitancy
+
+ggplot(joined_data, 
+       aes(edu_percent_bachelors, Estimated.hesitant)) +
+  geom_point()+
+  geom_smooth(method = "lm", se = FALSE)
+
+hesitancy_education_model <- lm(Estimated.hesitant ~ edu_percent_bachelors, 
+                         data = joined_data)
+
+glance(hesitancy_education_model)
+glimpse(joined_data)
 
 
 
-
-
-    # We gotta think of a far better name than this too... ha
+    # We gotta think of a far better name for this project too... ha
 
 
 
