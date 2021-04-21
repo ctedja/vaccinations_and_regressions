@@ -16,14 +16,13 @@ Given the above it is interesting to understand the main factors associated with
 ### Proposed Analysis Structure
 1. EDA and defining/quantifying the issue: How do we define a low-vaccination county? How many people are in 'low vaccination' counties?
 2. Regression modelling: Model 1 ('cannot') uses socio-economic status indicators, state-level fixed effects to look at vaccination rates. Model 2 ('will not') looks at 'antivaxxer' indicators related to vaccination rates. Model 3 ('all together') looks at both of these factors together. State fixed effects will be needed throughout, but also testing to see if there is spatial autocorrelation (and account for it). Analysis with the predictions from the best-fitting model can look at where the outliers are (on up side and down side) and why that may be.
-3. Factor/Principal Components Analysis or spatial analysis/LISA: Given the idea of identifying these two groups, if the hypotheses hold about lower rates being more associated with certain types of counties, we can try to make a sound group of those counties--could use PCA to identify differences in factor loadings across different county profiles (this assumes for example that higher trump voting districts would have fewer minorities in them (well you got that right), but also that they might have different social economic statuses, not necessarily...so this is something to think more about), or the spatial approach: a simple Local Indicator of Spatial Autocorrelation (LISA), if applicable, can help to identify 'hot spots' of low vaccination rates, and we can group them spatially.
+3. Factor/Principal Components Analysis or spatial analysis/LISA: Given the idea of identifying these two groups, if the hypotheses hold about lower rates being more associated with certain types of counties, we can try to make a sound group of those counties--could use PCA to identify differences in factor loadings across different county profiles (this assumes for example that higher trump voting districts would have fewer minorities in them (well you got that right), but also that they might have different social economic statuses, not necessarily...so this is something to think more about), or the spatial approach: a simple Local Indicator of Spatial Autocorrelation (LISA), if applicable, can help to identify 'hot spots' of low vaccination rates, and we can group them spatially. We can then track these groups over time later on and see if they are advancing at the same rate, and zoom in on what could help to accelerate progress there.  
 
 
 
 #### Additional variables interesting to get (running list):
 * Voteshare that went to Trump in the 2020 election, by county
-* Any other good 'antivaxxer' proxies? Gun ownership rates maayyyybe? Maybe there's some research on this (ex. state-level data that could be used)
 * 'Speed of vaccine rollout', a measure we can try calculating by getting vaccination rates by county for maybe 2 previous dates and charting the growth rate--could be useful, to think about a little more.
 
 #### Things to check
-* I thought Texas didn't provide county-disaggregated stats for vaccination rates, yet TX data is in our dataset....needs further investigation
+* 
