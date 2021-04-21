@@ -10,7 +10,9 @@ library(broom)
 #   https://data.cdc.gov/Vaccinations/Vaccine-Hesitancy-for-COVID-19-County-and-local-es/q9mh-h2tw
 
     # Initially, I had the following function but the direct url dl was taking forever)
-    #   vac_raw <- read.csv(url("https://data.cdc.gov/resource/q9mh-h2tw.csv"))
+vac_raw <- read.csv(url("https://data.cdc.gov/resource/q9mh-h2tw.csv"))
+write.csv(vac_raw, "C:/Users/mocta/Documents/GitHub/vaccinations_and_regressions/vac_raw.csv")
+
 
 vac_raw <- read.csv("Vaccine_Hesitancy_for_COVID-19__County_and_local_estimates.csv")
 
@@ -99,7 +101,7 @@ rm(test4)
 #   rather than percentages.
 
   # I've only selected overall poverty population numbers and percentages
-  #   while emitting child poverty stats and confidence intervals
+  #   while omitting child poverty stats and confidence intervals
   #     (especially since our vaccination data focuses on adults for now)
   poverty <-pov_raw %>%
     select(c("FIPStxt", 
@@ -164,6 +166,15 @@ glimpse(joined_data)
 #   = Estimated.strongly.hesitant
 #   = Estimated.hesitant
 #   anything else?
+
+# looking at vaccination rates in general is interesting. There is a thick tail of low-percentage counties, of special interest to us--these are those being left behind
+hist(joined_data$percent_adults_fully_vaccinated, breaks = 50)
+
+# What percentage of counties are still at really low vaccination rates? 5% of counties (150) are at 5% vaccination rate or less, and 11% (300+) are at 10% or lower vaccination rate, less than 
+summary(joined_data$percent_adults_fully_vaccinated)
+quantile(joined_data$percent_adults_fully_vaccinated, c(0, 0.02, 0.05, 0.1, .11, 0.15), na.rm = T)
+
+joined_data[joined_data$State == "WASHINGTON", "percent_adults_fully_vaccinated"]
 
 
 # When trying a single variable linear regression first here, with poverty.
