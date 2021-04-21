@@ -6,7 +6,7 @@ Moctar wrote the below after exploring the data a little more and brainstorming 
 ## Proposed re-title (tentative): "Those who cannot and those who will not--understanding COVID vaccination rate disparities in the United States"
 
 ### Background
-The US's vaccination rate is good, but it may be able to give some insights to other countries about ensuring equity in its rollout. Specifically, there is a need to understand the nature of areas with low vaccination rates. Two immediate explanations for counties with laggin vaccine rates come to mind:
+The US's vaccination rate is good, but it may be able to give some insights to other countries about ensuring equity in its rollout. Specifically, there is a need to understand the nature of areas with low vaccination rates. Two immediate explanations for counties with lagging vaccine rates come to mind:
 * Socio-economic status: with racial and class disparities traditionally providing a barrier to healthcare in the country, COVID vaccination rollout has been anecdotally (or more than anecdotally? might be some NYT article on this with numbers/analysis also) slower in low-income primarily minority-populated areas.
 * The growing anti-vaccination movement in the United States means that many are actively refusing to get vaccinated, posing a potential threat to eventual herd immunity. Despite the availability of vaccine stock, areas with high levels of 'anti-vaxxers' are also more likely to have lower vaccination rates.
 
