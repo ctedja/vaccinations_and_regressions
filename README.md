@@ -1,13 +1,13 @@
 # vaccinations_and_regressions
 A work in-progress project analysing vaccination trends in the US. @MoctarAboubacar
 
-Moctar wrote the below rather after exploring the data a little more and brainstorming the issue we are trying to address
+Moctar wrote the below after exploring the data a little more and brainstorming the issue we are trying to address
 
 ## Proposed re-title (tentative): "Those who cannot and those who will not--understanding COVID vaccination rate disparities in the United States"
 
 ### Background
 The US's vaccination rate is good, but it may be able to give some insights to other countries about ensuring equity in its rollout. Specifically, there is a need to understand the nature of areas with low vaccination rates. Two immediate explanations for counties with laggin vaccine rates come to mind:
-* Socio-economic status: with racial and class disparities traditionally providing a barrier to healthcare in the country, COVID vaccination rollout has been anecdotally (or more than anecdotally? might be some NYT articleon this with numbers/analysis also) slower in low-income primarily minority-populated areas.
+* Socio-economic status: with racial and class disparities traditionally providing a barrier to healthcare in the country, COVID vaccination rollout has been anecdotally (or more than anecdotally? might be some NYT article on this with numbers/analysis also) slower in low-income primarily minority-populated areas.
 * The growing anti-vaccination movement in the United States means that many are actively refusing to get vaccinated, posing a potential threat to eventual herd immunity. Despite the availability of vaccine stock, areas with high levels of 'anti-vaxxers' are also more likely to have lower vaccination rates.
 
 ### Question
@@ -20,7 +20,7 @@ Given the above it is interesting to understand the main factors associated with
 
 
 
-#### Additional variables interesting to get (running list):
+#### Additional variables it might be interesting to get (running list):
 * Voteshare that went to Trump in the 2020 election, by county
 * 'Speed of vaccine rollout', a measure we can try calculating by getting vaccination rates by county for maybe 2 previous dates and charting the growth rate--could be useful, to think about a little more.
 
