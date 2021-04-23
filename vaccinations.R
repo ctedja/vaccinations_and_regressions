@@ -174,7 +174,11 @@ hist(joined_data$percent_adults_fully_vaccinated, breaks = 50)
 summary(joined_data$percent_adults_fully_vaccinated)
 quantile(joined_data$percent_adults_fully_vaccinated, c(0, 0.02, 0.05, 0.1, .11, 0.15), na.rm = T)
 
-joined_data[joined_data$State == "WASHINGTON", "percent_adults_fully_vaccinated"]
+
+ggplot(joined_data, aes(State.Boundary))+
+  geom_polygon()
+  geom_smooth(method = 'lm')
+
 
 
 # When trying a single variable linear regression first here, with poverty.
@@ -200,6 +204,12 @@ hesitancy_model <- lm(percent_adults_fully_vaccinated ~ Estimated.hesitant,
                     data = joined_data)
 
 glance(hesitancy_model)
+
+
+ggplot(joined_data, 
+       aes(Estimated.hesitant, percent_adults_fully_vaccinated)) +
+  geom_jitter(alpha = 0.4)+
+  geom_smooth(method = "lm", se = FALSE)
 
 # Now having a look with unemployment
 #   we get an r-squared of 0.0122
