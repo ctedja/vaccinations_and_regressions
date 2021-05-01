@@ -5,6 +5,12 @@ library(data.table)
 library(lubridate)
 library(readxl)
 library(broom)
+library(egg)
+library(maps)
+library(sf)
+library(tigris)
+library(RColorBrewer)
+
 
 # This dataset on vaccine rollouts and vaccine hesitancy comes from the CDC.
 #   https://data.cdc.gov/Vaccinations/Vaccine-Hesitancy-for-COVID-19-County-and-local-es/q9mh-h2tw
@@ -152,20 +158,125 @@ joined_data <- vaccinations %>%
 
 glimpse(joined_data)
 
+# I found 315 NAs in the percent_adults_vaccinated... wonder why?
+#   they're mostly in Texas, New Mexico, Hawaii, and a few in Virginia
+joined_data %>%
+  filter(is.na(joined_data$percent_adults_fully_vaccinated))
 
 
-# EDA ----
-# Dependent variable
-#   = percent_adults_fully_vaccinated
 
-# Potential independent variables 
-#   = Unemployment_rate_2019
-#   = poverty_percentage
-#   = Median_Household_Income_2019 
-#   = Education (there are four different levels, I'm not sure)
-#   = Estimated.strongly.hesitant
-#   = Estimated.hesitant
-#   anything else?
+# EDA Part 1 ----
+#   EDA and defining/quantifying the issue: How do we define a low-vaccination county? 
+#   How many people are in 'low vaccination' counties?
+
+
+
+# A quick dual-plot to explore (boxplot + histogram)
+egg::ggarrange(
+  # boxplot
+  ggplot(joined_data, aes(x = "",
+                          y=percent_adults_fully_vaccinated)) +
+    stat_boxplot(geom ='errorbar') +
+    geom_boxplot(notch = TRUE) +
+    coord_flip() +
+    theme_minimal() +
+    xlab("") +
+    ylab(""),
+  # hist
+  ggplot(joined_data, aes(x = percent_adults_fully_vaccinated)) +
+    geom_histogram(bins = 50) +
+    theme_classic(), 
+  heights = c(1, 3))
+
+# The plot above shows us that there actually be some outliers, I think?
+
+# Based on the below, the mild threshold for the lower bound (Q1-IQR*1.5) 
+#   is at 2.65 percent. vaccination quartiles and lower bounds defined below.
+vac_q1 <- quantile(joined_data$percent_adults_fully_vaccinated, na.rm = TRUE)[1]
+vac_q2 <- quantile(joined_data$percent_adults_fully_vaccinated, na.rm = TRUE)[2]
+vac_q3 <- quantile(joined_data$percent_adults_fully_vaccinated, na.rm = TRUE)[3]
+vac_q4 <- quantile(joined_data$percent_adults_fully_vaccinated, na.rm = TRUE)[4]
+
+vac_lower_bound <- vac_q2 - (vac_q4-vac_q2)*1.5
+
+# The mild threshold for the upper bound (Q3+IQR*1.5) is at 35.05 percent
+vac_upper_bound <- vac_q4 + (vac_q4-vac_q2)*1.5
+
+# 28 counties are quite a bit behind that lower bound of now, at less than 2.65
+#   percent of their population vaccinated, based on the below.
+joined_data %>% 
+  filter(percent_adults_fully_vaccinated < vac_lower_bound) %>% 
+  length()
+
+
+# As to your question of how we might classify rates of facination,
+#   might the following work?
+
+test <- joined_data %>% 
+  mutate(vaccination_group = case_when(
+    percent_adults_fully_vaccinated < vac_lower_bound ~ "0. Laggers",
+    percent_adults_fully_vaccinated > vac_lower_bound &
+      percent_adults_fully_vaccinated <= vac_q2 ~ "1. First Quartile",
+    percent_adults_fully_vaccinated > vac_q2 &
+      percent_adults_fully_vaccinated <= vac_q3 ~ "2. Second Quartile",
+    percent_adults_fully_vaccinated > vac_q3 &
+      percent_adults_fully_vaccinated <= vac_q4 ~ "3. Third Quartile",
+    percent_adults_fully_vaccinated > vac_q4 &
+      percent_adults_fully_vaccinated <= vac_upper_bound ~ "4. Fourth Quartile",
+    percent_adults_fully_vaccinated > vac_upper_bound ~ "5. Frontrunners"))
+
+
+# // A Map -----
+#   using library(tigris) and library(RColorBrewer) and library(sf)
+#   @Moctar you were absolutely right though about how SLOW it is
+#   I tried doing the full US but it exploded my computer
+#   so as you can see below I'm just testing it on some selected states.
+#   Saved the image also in the repo if u wanna see.
+#     https://github.com/ctedja/vaccinations_and_regressions/blob/main/Vaccinations_EDA_Map.png
+#   for further reference for me, a US geography noob...
+#     https://en.wikipedia.org/wiki/List_of_U.S._state_and_territory_abbreviations
+
+
+county_basemap <- counties(cb = TRUE, 
+                           state = c(01, 12, 13, 45, 28, 47, 37)) %>% 
+  st_as_sf()
+
+test2 <- test %>% select(FIPS.Code, 
+                         vaccination_group, 
+                         County.Boundary, 
+                         State.Code) %>%
+  filter(State.Code %in% c("AL", "FL", "GA", "SC", "MS", "TN", "NC"))
+
+map <- left_join(county_basemap, test2, 
+                 by = c("GEOID" = "FIPS.Code")) %>% na.omit()
+
+ggplot(data = map) + 
+  geom_sf(data = map, aes(fill = vaccination_group), color = NA) +
+  geom_sf(data = county_basemap, aes(fill = NA), color = NA) + 
+  theme_void() +
+  scale_fill_brewer(palette = "BuPu", direction = -1)
+
+
+
+# Excuse this clunky code for now, it's just non-island state codes
+#state_code <- c("51", "31", "12", "05", "22", "33", "34", "29", 
+#                   "30", "13", "37", "17", "06", "42", "45", "39",
+#                   "40", "53", "54", "55", "16", "19", "01", "56", 
+#                   "20", "38", "21", "47", "46", "08", "26", "10",
+#                   "18", "41", "32", "24", "36", "02", "28", "49", 
+#                   "23", "04", "27","44", "11", "09", "25", "50")
+
+
+
+
+
+
+
+# EDA Part 2 -----
+#   Regression modelling: 
+#     Model 1 ('cannot') uses socio-economic status indicators, state-level fixed effects to look at vaccination rates. 
+#     Model 2 ('will not') looks at 'antivaxxer' indicators related to vaccination rates. 
+#     Model 3 ('all together') looks at both of these factors together.
 
 # looking at vaccination rates in general is interesting. There is a thick tail of low-percentage counties, of special interest to us--these are those being left behind
 hist(joined_data$percent_adults_fully_vaccinated, breaks = 50)
@@ -240,8 +351,6 @@ glance(hesitancy_education_model)
 glimpse(joined_data)
 
 
-
-    # We gotta think of a far better name for this project too... ha
 
 
 
