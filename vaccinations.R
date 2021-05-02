@@ -168,17 +168,9 @@ glimpse(joined_data)
 joined_data %>%
   filter(is.na(joined_data$percent_adults_fully_vaccinated))
 
-
-<<<<<<< HEAD
-=======
-
->>>>>>> 76f78e6db73c13e3034b3689fbb6875b4fcffc4c
 # EDA Part 1 ----
 #   EDA and defining/quantifying the issue: How do we define a low-vaccination county? 
 #   How many people are in 'low vaccination' counties?
-
-<<<<<<< HEAD
-=======
 
 
 >>>>>>> 76f78e6db73c13e3034b3689fbb6875b4fcffc4c
@@ -199,11 +191,8 @@ egg::ggarrange(
     theme_classic(), 
   heights = c(1, 3))
 
-<<<<<<< HEAD
-# The plot above shows us that there actually be some outliers, I think? 
-=======
+
 # The plot above shows us that there actually be some outliers, I think?
->>>>>>> 76f78e6db73c13e3034b3689fbb6875b4fcffc4c
 
 # Based on the below, the mild threshold for the lower bound (Q1-IQR*1.5) 
 #   is at 2.65 percent. vaccination quartiles and lower bounds defined below.
@@ -241,10 +230,6 @@ test <- joined_data %>%
     percent_adults_fully_vaccinated > vac_upper_bound ~ "5. Frontrunners"))
 
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 76f78e6db73c13e3034b3689fbb6875b4fcffc4c
 # // A Map -----
 #   using library(tigris) and library(RColorBrewer) and library(sf)
 #   @Moctar you were absolutely right though about how SLOW it is
@@ -254,7 +239,7 @@ test <- joined_data %>%
 #     https://github.com/ctedja/vaccinations_and_regressions/blob/main/Vaccinations_EDA_Map.png
 #   for further reference for me, a US geography noob...
 #     https://en.wikipedia.org/wiki/List_of_U.S._state_and_territory_abbreviations
-<<<<<<< HEAD
+
 
 county_basemap <- counties(cb = TRUE, 
                            state = c(01, 12, 13, 45, 28, 47, 37)) %>% 
@@ -487,7 +472,6 @@ summary(mod1.2)
 county_basemap <- counties(cb = TRUE, 
                            state = c(01, 12, 13, 45, 28, 47, 37)) %>% 
   st_as_sf()
->>>>>>> 76f78e6db73c13e3034b3689fbb6875b4fcffc4c
 
 test2 <- test %>% select(FIPS.Code, 
                          vaccination_group, 
@@ -599,10 +583,5 @@ glance(hesitancy_education_model)
 glimpse(joined_data)
 
 
-
-<<<<<<< HEAD
 # We gotta think of a far better name for this project too... ha
-=======
 
-
->>>>>>> 76f78e6db73c13e3034b3689fbb6875b4fcffc4c
