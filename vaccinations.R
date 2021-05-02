@@ -169,10 +169,19 @@ joined_data %>%
   filter(is.na(joined_data$percent_adults_fully_vaccinated))
 
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 76f78e6db73c13e3034b3689fbb6875b4fcffc4c
 # EDA Part 1 ----
 #   EDA and defining/quantifying the issue: How do we define a low-vaccination county? 
 #   How many people are in 'low vaccination' counties?
 
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> 76f78e6db73c13e3034b3689fbb6875b4fcffc4c
 # A quick dual-plot to explore (boxplot + histogram)
 egg::ggarrange(
   # boxplot
@@ -190,7 +199,11 @@ egg::ggarrange(
     theme_classic(), 
   heights = c(1, 3))
 
+<<<<<<< HEAD
 # The plot above shows us that there actually be some outliers, I think? 
+=======
+# The plot above shows us that there actually be some outliers, I think?
+>>>>>>> 76f78e6db73c13e3034b3689fbb6875b4fcffc4c
 
 # Based on the below, the mild threshold for the lower bound (Q1-IQR*1.5) 
 #   is at 2.65 percent. vaccination quartiles and lower bounds defined below.
@@ -228,7 +241,10 @@ test <- joined_data %>%
     percent_adults_fully_vaccinated > vac_upper_bound ~ "5. Frontrunners"))
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 76f78e6db73c13e3034b3689fbb6875b4fcffc4c
 # // A Map -----
 #   using library(tigris) and library(RColorBrewer) and library(sf)
 #   @Moctar you were absolutely right though about how SLOW it is
@@ -238,6 +254,7 @@ test <- joined_data %>%
 #     https://github.com/ctedja/vaccinations_and_regressions/blob/main/Vaccinations_EDA_Map.png
 #   for further reference for me, a US geography noob...
 #     https://en.wikipedia.org/wiki/List_of_U.S._state_and_territory_abbreviations
+<<<<<<< HEAD
 
 county_basemap <- counties(cb = TRUE, 
                            state = c(01, 12, 13, 45, 28, 47, 37)) %>% 
@@ -281,21 +298,149 @@ pairs.panels(all_ses_data)
   # Do any SES variables correlate with vaccination refusal? What about when the US is cut into different regions (ex. Northeast / South / Southwest, West, Midwest, Other?)
 
 
-# EDA Part 3 --- Tests for spatial autocorrelation in Xs and Ys
+# EDA Part 3 --- Tests for spatial autocorrelation in outcome variable
+# also ensure we have a reliable shape file to use
+# read in shape file
+map_us <- read_sf("C:/Users/mocta/Documents/GitHub/vaccinations_and_regressions/US_shpfile/UScounties.shp")
+map_us <- read_sf()
+
+names(joined_data)
+models_df <- joined_data %>% 
+  select(c("FIPS.Code",
+           "County.Boundary",
+           "State",
+           "Estimated.hesitant",
+           "Estimated.strongly.hesitant",
+           "percent_adults_fully_vaccinated", 
+           "Social.Vulnerability.Index..SVI.",
+           "Percent.Hispanic",
+           "Percent.non.Hispanic.Black",
+           "Percent.non.Hispanic.White",
+           "Percent.non.Hispanic.American.Indian.Alaska.Native",
+           "Percent.non.Hispanic.Native.Hawaiian.Pacific.Islander",
+           "Percent.non.Hispanic.Asian",
+           "Ability.to.handle.a.COVID.19.outbreak..CVAC.",
+           "Median_Household_Income_2019",
+           "poverty_percentage",
+           "edu_percent_less_hs",
+           "edu_percent_hs_only",
+           "edu_percent_bachelors")) %>% 
+  mutate(State = as.factor(State))
+
+models_df <- full_join(map_us, models_df, 
+                       by = c("FIPS" = "FIPS.Code")) %>% na.omit()
 
 
+# make a simple map to visualize continental US
+
+models_df_geo <- full_join(map_us, models_df, 
+                           by = c("FIPS" = "FIPS.Code"))
+
+map_eda <- models_df_geo %>% 
+  filter(STATE_NAME != "Alaska",
+         STATE_NAME != "Hawaii")
+
+# test
+plot(map_eda[1])
 
 
+# mapping variables
+# color palette for %ages of total
+myPalette <- colorRampPalette(rev(brewer.pal(11, "Spectral")))
+ggcolors <- scale_fill_gradientn(colours = myPalette(100), limits=c(0, 1))
+
+# Clearly clustering in values in several states: Georgia, Utah(?), Virginia. not so sure about once controlling for state effects though
+map_eda %>% 
+  ggplot(aes(fill = percent_adults_fully_vaccinated))+
+  geom_sf(color = NA)+
+  ggcolors+
+  theme_minimal()
+
+map_eda %>% 
+  ggplot(aes(fill = (poverty_percentage/100)))+
+  geom_sf(color = NA)+
+  ggcolors+
+  theme_minimal()
+
+map_eda %>% 
+  ggplot(aes(fill = Estimated.hesitant))+
+  geom_sf(color = NA)+
+  ggcolors+
+  theme_minimal()
+
+# Estimate autocorrelation with Moran's I
+require(spdep)
 
 
+# prep dataframe
+models_df_moran <- models_df %>% 
+  filter(STATE_NAME != "Alaska")
+
+models_df_moran <- models_df_moran[,c(5, 9:21)]
+
+# identify neighbors and create weights matrix
+nbs <- poly2nb(models_df_moran, queen = F, row.names = models_df_moran$FIPS) # rook adjacency
+wts <- nb2listw(nbs, style = 'W', zero.policy = T) # the W option here is row-standardization
+
+# Moran's test 
+# Moran's I shows elevated spatial autocorrelation across all variables, but more importantly, non-negligible autocorrelation in the response variable, % of adults fully vaccinated.
+models_df_moran <- st_drop_geometry(models_df_moran[, -1])
+
+str(models_df_moran)
+
+test_vec <- map_dbl(models_df_moran, function(x) moran.test(x, listw = wts, zero.policy = TRUE)$estimate[1])
+test_pval <- map_dbl(models_df_moran, function(x) moran.test(x, listw = wts, zero.policy = TRUE)$p.value)
+moran_table <- cbind(est = round(test_vec, 3), p = test_pval)
+
+moran_table
 
 
+# Moran plot
+# We can see here some slight clustering of Low-lows, and there is definitely a positive slope here. Still, there is definitely not much overt clustering/differentiation across counties
+models_df_moran$z_vacc <- as.numeric(scale(models_df_moran$percent_adults_fully_vaccinated))
+
+moran.plot(x = models_df_moran$z_vacc, listw = wts, labels = F, xlab = "Vaccination rate- z score", ylab="Lagged vaccination rate - z score")
 
 
+# model
+# naive model
+fit_naive <- lm(percent_adults_fully_vaccinated ~ Estimated.hesitant +
+                  Estimated.strongly.hesitant+
+                  poverty_percentage+
+                  Percent.Hispanic+
+                  Percent.non.Hispanic.Black+
+                  Percent.non.Hispanic.White+
+                  Ability.to.handle.a.COVID.19.outbreak..CVAC.+
+                  Median_Household_Income_2019+
+                  poverty_percentage+
+                  edu_percent_less_hs+
+                  edu_percent_hs_only+
+                  edu_percent_bachelors+
+                  State,
+                data = models_df)
 
+summary(fit_naive)
 
+# moran test on the model
+nbs2 <- poly2nb(models_df, queen = T)
+wts2 <- nb2listw(nbs2, style = "W", zero.policy = T)
 
+# Moran's I of ~ 0.2 in the model
+lm.morantest(fit_naive, listw = wts2, zero.policy = T)
 
+# map model residuals
+# see the autocorrelation clearly here, looking at Virginia (blue) and Oklahoma/Missouri (red)
+models_df$naive_res <- fit_naive$residuals
+
+models_df%>%
+  mutate(rquant = cut(naive_res, breaks = quantile(models_df$naive_res, p = seq(0,1,length.out = 10)), include.lowest = T))%>%
+  ggplot(aes(color = rquant, fill = rquant))+
+  geom_sf()+
+  scale_fill_brewer(palette = "RdBu")+
+  scale_color_brewer(palette = "RdBu")+
+  theme_minimal()
+
+# Will need to see if we want to include a spatial dimension to the regression models or not...despite what the stats say, I don't see a huge huge issue here.
 
 
 #   Regression modelling: 
@@ -307,14 +452,89 @@ pairs.panels(all_ses_data)
 # Dependent variable
 #   = percent_adults_fully_vaccinated
 
-# Potential independent variables 
-#   = Unemployment_rate_2019
-#   = poverty_percentage
-#   = Median_Household_Income_2019 
-#   = Education (there are four different levels, I'm not sure)
-#   = Estimated.strongly.hesitant
-#   = Estimated.hesitant
-#   anything else?
+# mod1.1 - Question: do poorer counties vaccinate slower?
+mod1.1 <- lm(percent_adults_fully_vaccinated ~ 
+               poverty_percentage+
+               Median_Household_Income_2019+
+               poverty_percentage,
+             data = models_df)
+
+summary(mod1.1)
+# Answer: no. The practical significance of anything is null. Also household income doesn't add anything to the model in presence of poverty
+
+#mod 1.2 - Question: at same levels of poverty, does ethnicity explain vaccination rate disparities?
+mod1.2 <- lm(percent_adults_fully_vaccinated ~ 
+               poverty_percentage+
+               Median_Household_Income_2019+
+               poverty_percentage+
+               Percent.Hispanic+
+               Percent.non.Hispanic.Black+
+               Percent.non.Hispanic.White+
+               # Percent.non.Hispanic.Native.Hawaiian.Pacific.Islander+
+               # Percent.non.Hispanic.American.Indian.Alaska.Native+
+               Percent.non.Hispanic.Asian,
+             data = models_df)
+
+summary(mod1.2)
+# Answer: yes, a little confusingly though, as there are virtually no disparities between hispanic/Black/White. These disparities exist when only looking at an ethnicities-only model, but not when controlling for poverty and income. The takeaway is that disparities across ethnicities are pretty small
+
+
+
+
+=======
+
+
+county_basemap <- counties(cb = TRUE, 
+                           state = c(01, 12, 13, 45, 28, 47, 37)) %>% 
+  st_as_sf()
+>>>>>>> 76f78e6db73c13e3034b3689fbb6875b4fcffc4c
+
+test2 <- test %>% select(FIPS.Code, 
+                         vaccination_group, 
+                         County.Boundary, 
+                         State.Code) %>%
+  filter(State.Code %in% c("AL", "FL", "GA", "SC", "MS", "TN", "NC"))
+
+map <- left_join(county_basemap, test2, 
+                 by = c("GEOID" = "FIPS.Code")) %>% na.omit()
+
+ggplot(data = map) + 
+  geom_sf(data = map, aes(fill = vaccination_group), color = NA) +
+  geom_sf(data = county_basemap, aes(fill = NA), color = NA) + 
+  theme_void() +
+  scale_fill_brewer(palette = "BuPu", direction = -1)
+
+
+
+# Excuse this clunky code for now, it's just non-island state codes
+#state_code <- c("51", "31", "12", "05", "22", "33", "34", "29", 
+#                   "30", "13", "37", "17", "06", "42", "45", "39",
+#                   "40", "53", "54", "55", "16", "19", "01", "56", 
+#                   "20", "38", "21", "47", "46", "08", "26", "10",
+#                   "18", "41", "32", "24", "36", "02", "28", "49", 
+#                   "23", "04", "27","44", "11", "09", "25", "50")
+
+
+
+
+
+
+
+# EDA Part 2 -----
+
+
+
+
+
+#   Regression modelling: 
+#     Model 1 ('cannot') uses socio-economic status indicators, state-level fixed effects to look at vaccination rates. 
+#     Model 2 ('will not') looks at 'antivaxxer' indicators related to vaccination rates. 
+#     Model 3 ('all together') looks at both of these factors together.
+
+
+
+
+
 
 
 # When trying a single variable linear regression first here, with poverty.
@@ -380,4 +600,9 @@ glimpse(joined_data)
 
 
 
+<<<<<<< HEAD
 # We gotta think of a far better name for this project too... ha
+=======
+
+
+>>>>>>> 76f78e6db73c13e3034b3689fbb6875b4fcffc4c
