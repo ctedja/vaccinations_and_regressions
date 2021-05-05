@@ -60,6 +60,10 @@ pop_raw <- read_excel("PopulationEstimates.xls",
                       skip = 2)
 
 
+# 2020 Voting
+vot_raw <- read.csv(url("https://raw.githubusercontent.com/tonmcg/US_County_Level_Election_Results_08-20/master/2020_US_County_Level_Presidential_Results.csv"))
+
+
 # TIDY ----
 # edu_raw has 3,283 FIPS, une_raw has 3,275; pop_raw has 3,273, pov_raw has 3,193
 #   and vac_raw has 3,142
@@ -107,6 +111,7 @@ length(unique(test4$'FIPS.Code'))
 rm(test4)
 
 
+
 # Now I'm just tidying out the mass of columns we dont need.
 #   I've kept here the pop numbers in case we need them later,
 #   rather than percentages.
@@ -152,6 +157,19 @@ population <- pop_raw %>% select(
     'POP_ESTIMATE_2019'
   ))
 
+voting <- vot_raw %>%
+  mutate(county_fips = as.character(county_fips)) %>% 
+  mutate(county_fips = case_when(nchar(county_fips) == 4 ~ paste0("0", county_fips), 
+                                 nchar(county_fips) == 5 ~ county_fips)) %>%
+  select(
+    c('county_fips',
+      'per_gop',
+      'per_dem'
+      )
+  )
+test <- vot_raw %>% 
+  mutate(totalpercent = per_gop + per_dem)
+view(sample_n(test, 20))
 
 # Now, to join. As mentioned above, we lose one Kalawao County, Hawaii,
 #   though I haven't investigated why that's not in the other datasets.
@@ -159,7 +177,8 @@ joined_data <- vaccinations %>%
   inner_join(unemployment, by = c("FIPS.Code" = "fips_txt")) %>%
   inner_join(population, by = c("FIPS.Code" = "FIPStxt")) %>%
   inner_join(poverty, by = c("FIPS.Code" = "FIPStxt")) %>% 
-  inner_join(education, by = c("FIPS.Code" = "FIPS Code"))
+  inner_join(education, by = c("FIPS.Code" = "FIPS Code")) %>%
+  inner_join(voting, by = c("FIPS.Code" = "county_fips"))
 
 glimpse(joined_data)
 
@@ -173,7 +192,7 @@ joined_data %>%
 #   How many people are in 'low vaccination' counties?
 
 
->>>>>>> 76f78e6db73c13e3034b3689fbb6875b4fcffc4c
+
 # A quick dual-plot to explore (boxplot + histogram)
 egg::ggarrange(
   # boxplot
