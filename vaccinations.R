@@ -10,18 +10,20 @@ library(maps)
 library(sf)
 library(tigris)
 library(RColorBrewer)
+require(spdep)
+require(sf)
 
 
 # This dataset on vaccine rollouts and vaccine hesitancy comes from the CDC.
 #   https://data.cdc.gov/Vaccinations/Vaccine-Hesitancy-for-COVID-19-County-and-local-es/q9mh-h2tw
 
 # Initially, I had the following function but the direct url dl was taking forever)
-#   vac_raw <- read.csv(url("https://data.cdc.gov/resource/q9mh-h2tw.csv"))
+   vac_raw <- read.csv(url("https://data.cdc.gov/resource/q9mh-h2tw.csv"))
 
 # for Moctar since R is being stupid
-#setwd("C:/Users/mocta/Documents/GitHub/vaccinations_and_regressions")
+ setwd("C:/Users/mocta/Documents/GitHub/vaccinations_and_regressions")
 
-vac_raw <- read.csv("Vaccine_Hesitancy_for_COVID-19__County_and_local_estimates.csv")
+ vac_raw <- read.csv("vac_raw.csv")
 
 
 
@@ -79,7 +81,7 @@ length(unique(edu_raw$'FIPS Code'))
 length(unique(une_raw$fips_txt))
 length(unique(pop_raw$FIPStxt))
 length(unique(pov_raw$FIPStxt))
-length(unique(vac_raw$FIPS.Code))
+length(unique(vac_raw$fips_code))
 
 # Just note that for the vaccination dataset, FIPS is originally integer
 # while the rest of the datasets have it as char, hence:
@@ -306,7 +308,6 @@ pairs.panels(all_ses_data)
 # also ensure we have a reliable shape file to use
 # read in shape file
 map_us <- read_sf("C:/Users/mocta/Documents/GitHub/vaccinations_and_regressions/US_shpfile/UScounties.shp")
-map_us <- read_sf()
 
 names(joined_data)
 models_df <- joined_data %>% 
@@ -323,12 +324,13 @@ models_df <- joined_data %>%
            "Percent.non.Hispanic.American.Indian.Alaska.Native",
            "Percent.non.Hispanic.Native.Hawaiian.Pacific.Islander",
            "Percent.non.Hispanic.Asian",
-           "Ability.to.handle.a.COVID.19.outbreak..CVAC.",
            "Median_Household_Income_2019",
            "poverty_percentage",
            "edu_percent_less_hs",
            "edu_percent_hs_only",
-           "edu_percent_bachelors")) %>% 
+           "edu_percent_bachelors",
+           "per_gop",
+           "per_dem")) %>% 
   mutate(State = as.factor(State))
 
 models_df <- full_join(map_us, models_df, 
@@ -337,12 +339,12 @@ models_df <- full_join(map_us, models_df,
 
 # make a simple map to visualize continental US
 
-models_df_geo <- full_join(map_us, models_df, 
+models_df_geo <- st_join(map_us, models_df, 
                            by = c("FIPS" = "FIPS.Code"))
 
 map_eda <- models_df_geo %>% 
-  filter(STATE_NAME != "Alaska",
-         STATE_NAME != "Hawaii")
+  filter(STATE_NAME.x != "Alaska",
+         STATE_NAME.x != "Hawaii")
 
 # test
 plot(map_eda[1])
@@ -414,7 +416,6 @@ fit_naive <- lm(percent_adults_fully_vaccinated ~ Estimated.hesitant +
                   Percent.Hispanic+
                   Percent.non.Hispanic.Black+
                   Percent.non.Hispanic.White+
-                  Ability.to.handle.a.COVID.19.outbreak..CVAC.+
                   Median_Household_Income_2019+
                   poverty_percentage+
                   edu_percent_less_hs+
@@ -483,9 +484,13 @@ summary(mod1.2)
 # Answer: yes, a little confusingly though, as there are virtually no disparities between hispanic/Black/White. These disparities exist when only looking at an ethnicities-only model, but not when controlling for poverty and income. The takeaway is that disparities across ethnicities are pretty small
 
 
+mod2.1<- lm(percent_adults_fully_vaccinated ~ 
+               per_gop+
+              State,
+             data = models_df)
 
 
-=======
+summary(mod2.1)
 
 
 county_basemap <- counties(cb = TRUE, 
