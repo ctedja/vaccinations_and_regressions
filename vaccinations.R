@@ -18,7 +18,7 @@ require(sf)
 #   https://data.cdc.gov/Vaccinations/Vaccine-Hesitancy-for-COVID-19-County-and-local-es/q9mh-h2tw
 
 # Initially, I had the following function but the direct url dl was taking forever)
-   vac_raw <- read.csv(url("https://data.cdc.gov/resource/q9mh-h2tw.csv"))
+  # vac_raw <- read.csv(url("https://data.cdc.gov/resource/q9mh-h2tw.csv"))
 
 # for Moctar since R is being stupid
  setwd("C:/Users/mocta/Documents/GitHub/vaccinations_and_regressions")
@@ -314,6 +314,7 @@ models_df <- joined_data %>%
   select(c("FIPS.Code",
            "County.Boundary",
            "State",
+           "POP_ESTIMATE_2019",
            "Estimated.hesitant",
            "Estimated.strongly.hesitant",
            "percent_adults_fully_vaccinated", 
@@ -331,6 +332,7 @@ models_df <- joined_data %>%
            "edu_percent_bachelors",
            "per_gop",
            "per_dem")) %>% 
+  mutate(fully_vax = percent_adults_fully_vaccinated * POP_ESTIMATE_2019) %>% 
   mutate(State = as.factor(State))
 
 models_df <- full_join(map_us, models_df, 
@@ -453,44 +455,108 @@ models_df%>%
 #     Model 2 ('will not') looks at 'antivaxxer' indicators related to vaccination rates. 
 #     Model 3 ('all together') looks at both of these factors together.
 
+# log transformation of dependent variable
+hist(log(models_df$fully_vax)) # BEAUTIFUL!!
+
+models_df$fully_vax_ln <- log(models_df$fully_vax)
+
+# test 
+ggplot(models_df, aes(x = per_gop, y = fully_vax_ln))+
+  geom_point()
+
+
 # MODEL 1
 # Dependent variable
-#   = percent_adults_fully_vaccinated
+#   = log of fully vaccinated persons
 
 # mod1.1 - Question: do poorer counties vaccinate slower?
-mod1.1 <- lm(percent_adults_fully_vaccinated ~ 
-               poverty_percentage+
+mod1.1 <- lm(fully_vax_ln ~  
+               poverty_percentage +
                Median_Household_Income_2019+
-               poverty_percentage,
+               State,
              data = models_df)
 
 summary(mod1.1)
-# Answer: no. The practical significance of anything is null. Also household income doesn't add anything to the model in presence of poverty
+plot(mod1.1)
+# why are poverty and income the same sign? is the practical significance of income just very low?
 
 #mod 1.2 - Question: at same levels of poverty, does ethnicity explain vaccination rate disparities?
-mod1.2 <- lm(percent_adults_fully_vaccinated ~ 
+mod1.2 <- lm(fully_vax_ln ~
                poverty_percentage+
                Median_Household_Income_2019+
-               poverty_percentage+
                Percent.Hispanic+
                Percent.non.Hispanic.Black+
                Percent.non.Hispanic.White+
-               # Percent.non.Hispanic.Native.Hawaiian.Pacific.Islander+
-               # Percent.non.Hispanic.American.Indian.Alaska.Native+
-               Percent.non.Hispanic.Asian,
+               Percent.non.Hispanic.Native.Hawaiian.Pacific.Islander+
+               Percent.non.Hispanic.American.Indian.Alaska.Native+
+               Percent.non.Hispanic.Asian + 
+               State,
              data = models_df)
 
 summary(mod1.2)
-# Answer: yes, a little confusingly though, as there are virtually no disparities between hispanic/Black/White. These disparities exist when only looking at an ethnicities-only model, but not when controlling for poverty and income. The takeaway is that disparities across ethnicities are pretty small
+plot(mod1.2)
+
+# Yes it does. In fact the sign on poverty is flipped (now negative) while sign on income remains the same...
+
+# mod 2.1 - Question: Does vaccination
 
 
-mod2.1<- lm(percent_adults_fully_vaccinated ~ 
-               per_gop+
+mod2.1<- lm(fully_vax_ln ~ 
+              Estimated.hesitant +
+              Estimated.strongly.hesitant + 
               State,
              data = models_df)
 
 
 summary(mod2.1)
+plot(mod2.1)
+
+# don't be alarmed by the  magnitudes for hesitant, remember these (same with per_gop) deal with percentages. So we are more interested in a 10% or 5% or 1% change, not in a change of '1 unit' which would be 100%. These high coefs basically mean it's 1 to 1: a 1% change in x leads to 1% change in Y on average
+
+
+mod2.2<- lm(fully_vax_ln ~
+              Estimated.hesitant +
+              Estimated.strongly.hesitant +
+              per_gop + 
+              State,
+            data = models_df)
+
+
+summary(mod2.2)
+plot(mod2.2)
+
+
+mod3 <- lm(fully_vax_ln ~
+             poverty_percentage +
+             Median_Household_Income_2019 +
+             Percent.Hispanic +
+             Percent.non.Hispanic.Black +
+             Percent.non.Hispanic.White +
+             Percent.non.Hispanic.Native.Hawaiian.Pacific.Islander +
+             Percent.non.Hispanic.American.Indian.Alaska.Native +
+             Percent.non.Hispanic.Asian +
+             Estimated.hesitant +
+             Estimated.strongly.hesitant +
+             per_gop + 
+             State,
+           data = models_df)
+
+
+summary(mod3)
+plot(mod3)
+
+# pretty tables -- figure out stargazer's issue
+require(stargazer)
+
+#basic idea of what we want
+stargazer(attitude)
+stargazer(mod1.1, mod1.2,
+          type = "html",
+          header = F,
+          out = "Models.htm")
+
+
+
 
 
 county_basemap <- counties(cb = TRUE, 
