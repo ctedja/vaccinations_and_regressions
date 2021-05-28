@@ -550,9 +550,12 @@ require(stargazer)
 
 #basic idea of what we want
 stargazer(attitude)
-stargazer(mod1.1, mod1.2,
+stargazer(mod1.1, mod1.2, mod2.1, mod2.2, mod3,
           type = "html",
           header = F,
+          dep.var.labels = "Log fully vaccinated persons",
+          covariate.labels = c("poverty percentage", "median income", "percent hispanic", "percent black", "percent white", "percent HAPA", "percent native",  "percent asian", "vaccine hesitant", "strongly vaccine hesitant", "Trump 2020 voteshare"),
+          omit = "State",
           out = "Models.htm")
 
 
