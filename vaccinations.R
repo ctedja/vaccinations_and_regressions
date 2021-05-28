@@ -512,7 +512,7 @@ summary(mod2.1)
 plot(mod2.1)
 
 # don't be alarmed by the  magnitudes for hesitant, remember these (same with per_gop) deal with percentages. So we are more interested in a 10% or 5% or 1% change, not in a change of '1 unit' which would be 100%. These high coefs basically mean it's 1 to 1: a 1% change in x leads to 1% change in Y on average
-
+# Still... these coefficients are a little too weird, way out of range it looks like...final question is to confirm whether this is the right interpretation or if anything else is wrong.
 
 mod2.2<- lm(fully_vax_ln ~
               Estimated.hesitant +
@@ -545,7 +545,7 @@ mod3 <- lm(fully_vax_ln ~
 summary(mod3)
 plot(mod3)
 
-# pretty tables -- figure out stargazer's issue
+# pretty tables
 require(stargazer)
 
 #basic idea of what we want
